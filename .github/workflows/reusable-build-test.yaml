@@ -50,7 +50,7 @@ jobs:
     - name: Set Build Version
       id: set-build-version
       run: |
-        echo "BUILD_VERSION=$(python src/*/run.py --version | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+        echo "BUILD_VERSION=$(python src/*/run.py --version | head -1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
 
     - name: Get Build Version
       id: get-build-version
