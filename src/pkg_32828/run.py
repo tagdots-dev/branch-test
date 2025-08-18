@@ -75,78 +75,111 @@ def check_user_inputs(repo, repo_url, exclude_branch, max_idle_days):
     return True
 
 
-def get_exempt_branches(repo, exclude_branches):
+def get_exempt_branches(repo, set_user_exclude_branches):
     """
-    build exempt branches (add default, protected, and PR base branches)
+    Add default, protected, and PR base branches to build a set of exempt branches
+    Remove user specified branches from exempt branches if the specified branches do not exist
 
     Parameter(s):
-    repo             : github repository object
-    exclude_branches: exclude_branches from user inputs
+    repo                     : github repository object
+    set_user_exclude_branches: set of branch(es) excluded from delete via user inputs
 
-    Return: set of exempt branches
+    Return: set of exempt branches excluded from delete
     """
+    set_exempt_branches = set_user_exclude_branches
+    all_branches = repo.get_branches()
+    set_all_branches = set()
+
+    """iterate all branches"""
+    for branch in all_branches:
+        set_all_branches.add(branch.name)
+
+    """remove branch from set_exempt_branches if the branch is not found in existing branches"""
+    for user_exclude_branch in set_user_exclude_branches.copy():
+        if user_exclude_branch not in set_all_branches:
+            set_exempt_branches.remove(user_exclude_branch)
+
+    """add to set_exempt_branch - default branch"""
     default_branch = repo.default_branch
-    exclude_branches.add(default_branch)
+    set_exempt_branches.add(default_branch)
+    print(f'Default Branch  : {default_branch}')
 
-    for branch in repo.get_branches():
+    """add protected branch to set_exempt_branch"""
+    for branch in all_branches:
         if branch.protected:
-            exclude_branches.add(branch.name)
+            set_exempt_branches.add(branch.name)
+            print(f'Protected Branch: {branch.name}')
 
-    pulls = repo.get_pulls(state='open')
+    """add to set_exempt_branch - PR head branch"""
+    pulls = repo.get_pulls()
     for pull in pulls:
         base_branch = pull.base.ref
-        exclude_branches.add(base_branch)
+        set_exempt_branches.add(base_branch)
 
         head_branch = pull.head.ref
-        exclude_branches.add(head_branch)
+        set_exempt_branches.add(head_branch)
+        print(f'PR Head Branch  : {head_branch}')
 
-    return exclude_branches
+    return set_exempt_branches
 
 
-def get_qualified_branches(repo, exempt_branches, branch_maximum_idle_cutoff):
+def get_branches_to_delete(repo, max_idle_days, set_exempt_branches, branch_max_idle):
     """
-    get qualified branches
+    get to-be-deleted branches from not-exempt branches
 
     Parameter(s):
-    repo                      : github repository object
-    exempt_branches           : exclude_branches from user inputs
-    branch_maximum_idle_cutoff: maximum number of days that the branch has been idle
+    repo               : github repository object
+    set_exempt_branches: set of exempt branches excluded from delete
+    branch_max_idle    : datetime on maximum number of days that the branch has been idle
 
-    Return: list of branches that should be deleted and total branch count
+    Return: list of branches to delete, number of branches not exempt from delete
     """
-    branches = []
+    list_branches_to_delete = []
     branch_count = 0
+    not_exempt_branch_count = 0
     for branch in repo.get_branches():
         branch_count += 1
-        if branch.name not in exempt_branches and branch_maximum_idle_cutoff > branch.commit.commit.committer.date:
-            branches.append(branch.name)
+        if branch.name not in set_exempt_branches:
+            not_exempt_branch_count += 1
+            if branch_max_idle > branch.commit.commit.committer.date:
+                list_branches_to_delete.append(branch.name)
 
-    print(f'\nTotal Number of Branches              : {branch_count}')
-    print(f'Total Number of Branches To Be Deleted: {len(branches)}')
+    print(f'\nTotal Number of Branches                       : {branch_count}')
+    print(f'Total Number of Branches Exempt From Delete    : {len(set_exempt_branches)}')
+    print(f'Total Number of Branches Not Exempt From Delete: {not_exempt_branch_count}')
 
-    return branches, branch_count
+    return list_branches_to_delete, not_exempt_branch_count
 
 
-def delete_branches(repo, dry_run, branch_max_idle_cutoff, qualified_branches):
+def delete_branches(repo, dry_run, max_idle_days, list_branches_to_delete, not_exempt_branch_count):
     """
-    get qualified branches
+    delete branches
 
     Parameter(s):
-    repo              : github repository object
-    qualified_branches: branches exempt from deletion
+    repo                   : github repository object
+    max_idle_days          : maximum number of days that the branch has been idle
+    list_branches_to_delete: list of branches to delete
+    not_exempt_branch_count: number of branches not exempt from delete
 
     Return: boolean
     """
-    print(f'\nDeleting Branch(es) older than {branch_max_idle_cutoff.strftime("%Y-%m-%d %H:%M:%S")}')
-    print('---------------------------------------------------')
-    if len(qualified_branches) > 0:
-        for qualified_branch in qualified_branches:
-            branch = repo.get_branch(qualified_branch)
+    dry_run_msg = "(MOCK) " if dry_run else "✅ "
+    console = Console()
+    console.print(f'\n[red]From {not_exempt_branch_count} Branch(es) Not Exempt From Delete[/red], '
+                  f'[red] {len(list_branches_to_delete)} is/are older than {max_idle_days} day(s)[/red]')
+    print('-------------------------------------------------------------------------------------------------')
+    if len(list_branches_to_delete) > 0:
+        for branch_to_delete in list_branches_to_delete:
+            branch = repo.get_branch(branch_to_delete)
             branch_last_commit_time = branch.commit.commit.committer.date.strftime("%Y-%m-%d %H:%M:%S")
-            branch.delete() if not dry_run else ""
-            print(f'✅ Deleted branch (last update {branch_last_commit_time}): {qualified_branch}')
+
+            ref = repo.get_git_ref(f"heads/{branch_to_delete}")
+            ref.delete() if not dry_run else ""
+
+            print(f'{dry_run_msg}Delete branch - last update UTC {branch_last_commit_time}: {branch_to_delete}')
+
     else:
-        print("There is no qualified branch to delete")
+        print("There is no branch to delete")
 
     return True
 
@@ -155,16 +188,16 @@ def delete_branches(repo, dry_run, branch_max_idle_cutoff, qualified_branches):
 @click.option("--dry-run", required=False, type=bool, default=True, help="default: true")
 @click.option("--repo-url", required=True, type=str, help="e.g. https://github.com/{owner}/{repo}")
 @click.option("--exclude-branch", required=False, type=str, multiple=True, help="Branch excluded from deletion")
-@click.option("--max-idle-days", required=True, help="Delete branches over max. idle days")
+@click.option("--max-idle-days", required=True, help="Delete branches older than max. idle days")
 @click.version_option(version=__version__)
 def main(dry_run, repo_url, exclude_branch, max_idle_days):
-    exclude_branches = set(exclude_branch)
+    set_user_exclude_branches = set(exclude_branch)
     with suppress(ValueError):
         max_idle_days = int(max_idle_days)
 
     console = Console()
     console.print(f"\n🚀 Starting to Delete GitHub Branches (dry-run: [red]{dry_run}[/red], repo-url: [red]{repo_url}[/red],"
-                  f" exclude-branches: [red]{exclude_branch}[/red], max-idle-days: [red]{max_idle_days}[/red])\n")
+                  f" exclude-branch: [red]{exclude_branch}[/red], max-idle-days: [red]{max_idle_days}[/red])\n")
 
     try:
         """setup github repo object"""
@@ -172,20 +205,21 @@ def main(dry_run, repo_url, exclude_branch, max_idle_days):
         owner_repo = get_owner_repo(repo_url)
         repo = gh.get_repo(owner_repo)
 
-        if check_user_inputs(repo, repo_url, exclude_branches, max_idle_days):
-            """build exempt branches"""
-            exempt_branches = get_exempt_branches(repo, exclude_branches)
-
+        if check_user_inputs(repo, repo_url, set_user_exclude_branches, max_idle_days):
             """set time"""
             current_datetime_tzutc = datetime.now(timezone.utc)
-            branch_max_idle_cutoff = current_datetime_tzutc - timedelta(days=max_idle_days)
-            print(f'Current Time (UTC): {current_datetime_tzutc.strftime("%Y-%m-%d %H:%M:%S")}')
+            branch_max_idle = current_datetime_tzutc - timedelta(days=max_idle_days)
+            print(f'Current Time (UTC): {current_datetime_tzutc.strftime("%Y-%m-%d %H:%M:%S")}\n')
 
-            """get qualified branches"""
-            qualified_branches, total_branch_count = get_qualified_branches(repo, exempt_branches, branch_max_idle_cutoff)
+            """build exempt branches"""
+            set_exempt_branches = get_exempt_branches(repo, set_user_exclude_branches)
 
-            """delete qualified branches"""
-            delete_branches(repo, dry_run, branch_max_idle_cutoff, qualified_branches)
+            """get list of to-be-deleted branches and number of not-exempt branch"""
+            list_branches_to_delete, not_exempt_branch_count = \
+                get_branches_to_delete(repo, max_idle_days, set_exempt_branches, branch_max_idle)
+
+            """delete to-be-deleted branches"""
+            delete_branches(repo, dry_run, max_idle_days, list_branches_to_delete, not_exempt_branch_count)
         else:
             sys.exit(1)
 
@@ -195,9 +229,4 @@ def main(dry_run, repo_url, exclude_branch, max_idle_days):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    main(standalone_mode=False)
-    console = Console()
-    console.print("\n[bold red]Notes[/ bold red]")
-    console.print("* no to delete default branch")
-    console.print("* no to delete protected branches")
-    console.print("* no to delete branches used in PR\n")
+    main()

@@ -16,9 +16,9 @@ from pkg_32828.run import (
     check_user_inputs,
     delete_branches,
     get_auth,
+    get_branches_to_delete,
     get_exempt_branches,
     get_owner_repo,
-    get_qualified_branches,
     main,
 )
 
@@ -159,7 +159,7 @@ class TestGetExemptBranches:
         mock_repo.get_pulls.return_value = [pull_01, pull_02]
 
         # create exempt set
-        exempt = get_exempt_branches(mock_repo, exclude_branches=set(["custom-exempt"]))
+        exempt = get_exempt_branches(mock_repo, set_user_exclude_branches=set(["branch-not-in-all"]))
 
         # assert branches in or not in exempt
         assert "protected_01" in exempt
@@ -174,11 +174,11 @@ class TestGetExemptBranches:
         assert "dev" in exempt
         assert "feature1" in exempt
         assert "feature2" in exempt
-        assert "custom-exempt" in exempt
+        assert "branch-not-in-all" not in exempt
 
 
-class TestGetQualifiedBranches:
-    def test_qualified_branches(self, mock_repo, mock_branch):
+class TestGetBranchesToDelete:
+    def test_branches_to_delete(self, mock_repo, mock_branch):
         normal_branch_01 = mock_branch("normal_01", protected=False, last_commit_days_ago=10)
         normal_branch_02 = mock_branch("normal_02", protected=False, last_commit_days_ago=15)
         normal_branch_03 = mock_branch("normal_03", protected=False, last_commit_days_ago=5)
@@ -197,25 +197,29 @@ class TestGetQualifiedBranches:
             normal_branch_06,
         ]
 
+        max_idle_days = 7
         exempt_branches = {"main", "normal_01", "normal_02"}
-        cutoff_datetime = datetime.now(timezone.utc) - timedelta(days=7)
-        qualified, total = get_qualified_branches(mock_repo, exempt_branches, cutoff_datetime)
+        cutoff_datetime = datetime.now(timezone.utc) - timedelta(days=max_idle_days)
+        list_branches_to_delete, not_exempt_branch_count =\
+            get_branches_to_delete(mock_repo, max_idle_days, exempt_branches, cutoff_datetime)
 
-        # qualified branches will be deleted
-        # Total (7) - Exempt branches (3) - Not qualified (1 [normal_03]) = 3 qualified
-        assert total == 7
-        assert len(qualified) == 3
-        assert "normal_03" not in qualified
-        assert "normal_04" in qualified
-        assert "normal_05" in qualified
-        assert "normal_06" in qualified
+        # Total branches (7) - Exempt branches (3) = not_exempt_branch_count (4)
+        # not_exempt_branch_count                  = not in list_branches_to_delete (1) + list_branches_to_delete (3)
+        assert not_exempt_branch_count == 4
+        assert len(list_branches_to_delete) == 3
+        assert "normal_03" not in list_branches_to_delete
+        assert "normal_04" in list_branches_to_delete
+        assert "normal_05" in list_branches_to_delete
+        assert "normal_06" in list_branches_to_delete
 
 
 class TestDeleteBranches:
-    def test_delete_with_qualified_branches(self, mock_repo, mock_branch, capsys):
+    def test_delete_with_branches_to_delete(self, mock_repo, mock_branch, capsys):
         dry_run = False
+        max_idle_days = 7
+        not_exempt_branch_count = 4
 
-        qualified_branches = ["normal_04", "normal_05", "normal_06"]
+        list_branches_to_delete = ["normal_04", "normal_05", "normal_06"]
 
         mock_repo.get_branch(side_effect=[
             mock_branch("normal_04", last_commit_days_ago=12),
@@ -223,20 +227,20 @@ class TestDeleteBranches:
             mock_branch("normal_06", last_commit_days_ago=10)
         ])
 
-        cutoff_datetime = datetime.now(timezone.utc) - timedelta(days=7)
-        delete_branches(mock_repo, dry_run, cutoff_datetime, qualified_branches)
-
+        delete_branches(mock_repo, dry_run, max_idle_days, list_branches_to_delete, not_exempt_branch_count)
         captured = capsys.readouterr()
 
-        assert "Deleting Branch(es) older than" in captured.out
-        assert "✅ Deleted branch" in captured.out
+        assert "older than" in captured.out
         assert "normal" in captured.out
 
-    def test_delete_without_qualified_branches(self, mock_repo, capsys):
+    def test_delete_without_branches_to_delete(self, mock_repo, capsys):
         dry_run = False
-        delete_branches(mock_repo, dry_run, datetime.now(timezone.utc), [])
+        max_idle_days = 7
+        not_exempt_branch_count = 4
+
+        delete_branches(mock_repo, dry_run, max_idle_days, [], not_exempt_branch_count)
         captured = capsys.readouterr()
-        assert "There is no qualified branch to delete" in captured.out
+        assert "There is no branch to delete" in captured.out
 
 
 class TestMainCommand:
