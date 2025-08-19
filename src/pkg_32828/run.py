@@ -220,8 +220,11 @@ def main(dry_run, repo_url, exclude_branches, max_idle_days):
         max_idle_days = int(max_idle_days)
 
     console = Console()
-    console.print(f"\n🚀 Starting to Delete GitHub Branches (dry-run: [red]{dry_run}[/red], repo-url: [red]{repo_url}[/red],"
-                  f" exclude-branches: [red]{set_user_exclude_branches}[/red], max-idle-days: [red]{max_idle_days}[/red])\n")
+    console.print(f"\n🚀 Starting to Delete GitHub Branches (\
+                  dry-run: [red]{dry_run}[/red], \
+                  repo-url: [red]{repo_url}[/red], \
+                  exclude-branches: [red]{set_user_exclude_branches}[/red], \
+                  max-idle-days: [red]{max_idle_days}[/red])\n")
 
     try:
         """setup github repo object"""
