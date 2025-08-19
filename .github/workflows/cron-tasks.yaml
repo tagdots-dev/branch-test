@@ -86,7 +86,7 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         repo-url: ${{ github.repository }}
-        max-idle-days: hello
+        max-idle-days: 3
         exclude-branches: badges, test2
         dry-run: true
 
