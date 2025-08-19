@@ -71,7 +71,7 @@ jobs:
         days-before-close: 3
         operations-per-run: 40
 
-  # stale-branches: # https://github.com/tagdots-dev/branch-test
+  # stale-branches: # https://github.com/tagdots-dev/action-test
   #   runs-on: ubuntu-latest
 
   #   permissions:
@@ -81,14 +81,13 @@ jobs:
   #   steps:
   #   - name: Run stale-branches
   #     id: stale-branches
-  #     uses: tagdots-dev/delete-branches@main
+  #     uses: tagdots-dev/action-test@main
   #     env:
   #       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #     with:
   #       repo-url: ${{ github.repository }}
-  #       exclude-branch: main
-  #       exclude-branch: badges
-  #       max-idle-days: 20
+  #       max-idle-days: 14
+  #       exclude-branches: 'badges'
   #       dry-run: false
 
   update-pre-commit: # https://github.com/tagdots/update-pre-commit-action
