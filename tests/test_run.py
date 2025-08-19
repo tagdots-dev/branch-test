@@ -19,6 +19,7 @@ from pkg_32828.run import (
     get_branches_to_delete,
     get_exempt_branches,
     get_owner_repo,
+    get_set_user_exclude_branches,
     main,
 )
 
@@ -93,6 +94,28 @@ class TestGetOwnerRepo:
         assert get_owner_repo(repo_url) == "owner/repo"
 
 
+class TestGetSetUserExcludeBranches:
+    def test_set_user_exclude_branches_success_01(self):
+        exclude_branches = ' test1,test2 , test3 '
+        expected_string = 'test3'
+        set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)
+
+        assert isinstance(set_user_exclude_branches, set) is True
+        assert expected_string in set_user_exclude_branches
+
+    def test_set_user_exclude_branches_success_02(self):
+        exclude_branches = ''
+        set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)
+
+        assert isinstance(set_user_exclude_branches, set) is True
+
+    def test_set_user_exclude_branches_failure_01(self):
+        exclude_branches = []
+        set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)
+
+        assert isinstance(set_user_exclude_branches, set) is True
+
+
 class TestCheckUserInputs:
     def test_user_inputs_success(self):
         repo = Mock()
@@ -128,29 +151,19 @@ class TestCheckUserInputs:
 
 
 class TestGetExemptBranches:
-    def test_exempt_branches(self, mock_repo, mock_branch, mock_pull):
+    def test_exempt_branches_01(self, mock_repo, mock_branch, mock_pull):
         # mock protected branches
         protected_branch_01 = mock_branch("protected_01", protected=True)
-        protected_branch_02 = mock_branch("protected_02", protected=True)
 
         # mock normal branches
         normal_branch_01 = mock_branch("normal_01", protected=False, last_commit_days_ago=10)
         normal_branch_02 = mock_branch("normal_02", protected=False, last_commit_days_ago=15)
-        normal_branch_03 = mock_branch("normal_03", protected=False, last_commit_days_ago=5)
-        normal_branch_04 = mock_branch("normal_04", protected=False, last_commit_days_ago=2)
-        normal_branch_05 = mock_branch("normal_05", protected=False, last_commit_days_ago=20)
-        normal_branch_06 = mock_branch("normal_06", protected=False, last_commit_days_ago=8)
 
         # get all mock branches
         mock_repo.get_branches.return_value = [
             protected_branch_01,
-            protected_branch_02,
             normal_branch_01,
             normal_branch_02,
-            normal_branch_03,
-            normal_branch_04,
-            normal_branch_05,
-            normal_branch_06,
         ]
 
         # mock PRs
@@ -163,18 +176,45 @@ class TestGetExemptBranches:
 
         # assert branches in or not in exempt
         assert "protected_01" in exempt
-        assert "protected_02" in exempt
         assert "normal_01" not in exempt
         assert "normal_02" not in exempt
-        assert "normal_03" not in exempt
-        assert "normal_04" not in exempt
-        assert "normal_05" not in exempt
-        assert "normal_06" not in exempt
         assert "main" in exempt
         assert "dev" in exempt
         assert "feature1" in exempt
         assert "feature2" in exempt
         assert "branch-not-in-all" not in exempt
+
+    def test_exempt_branches_02(self, mock_repo, mock_branch, mock_pull):
+        # mock protected branches
+        protected_branch_01 = mock_branch("protected_01", protected=True)
+
+        # mock normal branches
+        normal_branch_01 = mock_branch("normal_01", protected=False, last_commit_days_ago=10)
+        normal_branch_02 = mock_branch("normal_02", protected=False, last_commit_days_ago=15)
+
+        # get all mock branches
+        mock_repo.get_branches.return_value = [
+            protected_branch_01,
+            normal_branch_01,
+            normal_branch_02,
+        ]
+
+        # mock PRs
+        pull_01 = mock_pull("main", "feature1")
+        pull_02 = mock_pull("dev", "feature2")
+        mock_repo.get_pulls.return_value = [pull_01, pull_02]
+
+        # create exempt set
+        exempt = get_exempt_branches(mock_repo, set_user_exclude_branches=set())
+
+        # assert branches in or not in exempt
+        assert "protected_01" in exempt
+        assert "normal_01" not in exempt
+        assert "normal_02" not in exempt
+        assert "main" in exempt
+        assert "dev" in exempt
+        assert "feature1" in exempt
+        assert "feature2" in exempt
 
 
 class TestGetBranchesToDelete:
@@ -230,7 +270,7 @@ class TestDeleteBranches:
         delete_branches(mock_repo, dry_run, max_idle_days, list_branches_to_delete, not_exempt_branch_count)
         captured = capsys.readouterr()
 
-        assert "older than" in captured.out
+        assert "had no commit in the last" in captured.out
         assert "normal" in captured.out
 
     def test_delete_without_branches_to_delete(self, mock_repo, capsys):
@@ -251,8 +291,7 @@ class TestMainCommand:
             [
                 "--dry-run", "true",
                 "--repo-url", "https://github.com/tagdots-dev/branch-test",
-                "--exclude-branch", "main",
-                "--exclude-branch", "badges",
+                "--exclude-branches", "main",
                 "--max-idle-days", 1
             ]
         )
@@ -279,8 +318,7 @@ class TestMainCommand:
             [
                 "--dry-run", "true",
                 "--repo-url", "https://github.com/tagdots-dev/branch-test",
-                "--exclude-branch", "main",
-                "--exclude-branch", "badges",
+                "--exclude-branches", "main",
                 "--max-idle-days", 5
             ]
         )
@@ -297,8 +335,7 @@ class TestMainCommand:
             [
                 "--dry-run", "true",
                 "--repo-url", "https://github.com/tagdots-dev/branch-test",
-                "--exclude-branch", "main",
-                "--exclude-branch", "badges",
+                "--exclude-branches", "main",
                 "--max-idle-days", "hello"
             ]
         )
