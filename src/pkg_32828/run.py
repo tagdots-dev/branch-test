@@ -64,7 +64,7 @@ def check_user_inputs(repo, repo_url, exclude_branch, max_idle_days):
         print("❌ Error: excluded-branch must be a set")
         return False
 
-    if max_idle_days is not None and (not isinstance(max_idle_days, int) or max_idle_days <= 0):
+    if max_idle_days is not None and (not isinstance(max_idle_days, int) or max_idle_days < 0):
         print("❌ Error: max-idle-days must be an integer (0 or more)")
         return False
 
