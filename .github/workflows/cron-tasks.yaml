@@ -69,26 +69,26 @@ jobs:
         stale-issue-message: 'This issue is stale because it has been open 5 days with no activity. Remove stale label or comment or this will be closed in 3 days after stale'
         days-before-stale: 5
         days-before-close: 3
-        operations-per-run: 40
+        delete-branch: true
 
-  # stale-branches: # https://github.com/tagdots-dev/action-test
-  #   runs-on: ubuntu-latest
+  stale-branches: # https://github.com/tagdots-dev/action-test
+    runs-on: ubuntu-latest
 
-  #   permissions:
-  #     contents: write
-  #     pull-requests: read
+    permissions:
+      contents: write
+      pull-requests: read
 
-  #   steps:
-  #   - name: Run stale-branches
-  #     id: stale-branches
-  #     uses: tagdots-dev/action-test@main
-  #     env:
-  #       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     with:
-  #       repo-url: ${{ github.repository }}
-  #       max-idle-days: 14
-  #       exclude-branches: 'badges'
-  #       dry-run: false
+    steps:
+    - name: Run stale-branches
+      id: stale-branches
+      uses: tagdots-dev/action-test@main
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        repo-url: ${{ github.repository }}
+        max-idle-days: 2
+        exclude-branches: 'badges'
+        dry-run: true
 
   update-pre-commit: # https://github.com/tagdots/update-pre-commit-action
     runs-on: ubuntu-latest
@@ -110,7 +110,7 @@ jobs:
 
   notify-slack: # https://github.com/slackapi/slack-github-action
     if: always()
-    needs: [badge-demo, stale-workflow-runs, stale-issues-prs, update-pre-commit]
+    needs: [badge-demo, stale-workflow-runs, stale-issues-prs, stale-branches, update-pre-commit]
 
     runs-on: ubuntu-latest
 
@@ -123,7 +123,7 @@ jobs:
       shell: bash
       run: |
         # get overall result from all of the previous jobs
-        if "${{ needs.badge-demo.result == 'success' && needs.stale-workflow-runs.result == 'success' && needs.stale-issues-prs.result == 'success' && needs.update-pre-commit.result == 'success' }}"; then
+        if "${{ needs.badge-demo.result == 'success' && needs.stale-workflow-runs.result == 'success' && needs.stale-issues-prs.result == 'success' && needs.stale-branches.result == 'success' && needs.update-pre-commit.result == 'success' }}"; then
           echo "WORKFLOW_RESULT=:white_check_mark:" >> "$GITHUB_OUTPUT"
         else
           echo "WORKFLOW_RESULT=:no_entry:" >> "$GITHUB_OUTPUT"
@@ -144,5 +144,6 @@ jobs:
               Job: badge-demo          - ${{ needs.badge-demo.result }}\n
               Job: stale-workflow-runs - ${{ needs.stale-workflow-runs.result }}\n
               Job: stale-issues-prs    - ${{ needs.stale-issues-prs.result }}\n
+              Job: stale-branches      - ${{ needs.stale-branches.result }}\n
               Job: update-pre-commit   - ${{ needs.update-pre-commit.result }}
               ```"
