@@ -214,7 +214,6 @@ def get_set_user_exclude_branches(exclude_branches):
 @click.option("--max-idle-days", required=True, help="Delete branches older than max. idle days")
 @click.version_option(version=__version__)
 def main(dry_run, repo_url, exclude_branches, max_idle_days):
-    set_user_exclude_branches = set()
     with suppress(AttributeError):
         set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)
     with suppress(ValueError):
