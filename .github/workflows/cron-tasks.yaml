@@ -87,7 +87,7 @@ jobs:
       with:
         repo-url: ${{ github.repository }}
         max-idle-days: 2
-        exclude-branches: 'badges'
+        exclude-branches: badges, test2
         dry-run: true
 
   update-pre-commit: # https://github.com/tagdots/update-pre-commit-action
