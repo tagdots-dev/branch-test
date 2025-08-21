@@ -4,7 +4,7 @@ name: CodeQL
 
 on:
   schedule:
-    - cron: '30 0 * * 6'
+    - cron: '30 0 * * *'
 
   workflow_call:
 
