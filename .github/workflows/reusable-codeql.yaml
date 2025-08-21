@@ -43,7 +43,6 @@ jobs:
       uses: github/codeql-action/analyze@96f518a34f7a870018057716cc4d7a5c014bd61c # v3.29.10
       with:
         output: codeql-results/
-        fail-on-severity: note
 
     - name: Upload codeql-${{ matrix.language }}
       id: upload-artifacts
