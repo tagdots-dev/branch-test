@@ -34,6 +34,7 @@ updates:
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
-
+    cooldown:
+      default-days: 3
 
 # NOTE: this file is managed by terraform
