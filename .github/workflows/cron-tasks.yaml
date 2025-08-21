@@ -26,7 +26,7 @@ jobs:
 
     steps:
     - id: badge-demo
-      uses: tagdots/setup-badge-action@cfe062e2921260b385fbe23dcfe43b2b9eb3d3c5 # 1.0.12
+      uses: tagdots/setup-badge-action@c6514d52c3cef8d85e05fcf20b3b8c5f965d6b50 # 1.0.17
 
   stale-workflow-runs: # https://github.com/tagdots/delete-workflow-runs-action
     runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
     steps:
     - name: Run stale-workflow-runs
       id: stale-workflow-runs
-      uses: tagdots/delete-workflow-runs-action@58a1d5cc098bd375f82e70a5c8b45261024f100c # 1.0.4
+      uses: tagdots/delete-workflow-runs-action@8c2f169b7c560df6c1ee6d001f51ba8be0e4acfd # 1.0.7
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -81,7 +81,7 @@ jobs:
     steps:
     - name: Run stale-branches
       id: stale-branches
-      uses: tagdots/delete-branches-action@ff424d3a4af5b29492bd8b778887583259b3e573 # 1.0.0
+      uses: tagdots/delete-branches-action@fad59ec4b73f3a47a2b8687ec8613e25a832debc # 1.0.2
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
