@@ -45,7 +45,7 @@ updates:
 
     allow:
       - dependency-type: "all"
-    
+
 
 
 # NOTE: this file is managed by terraform
