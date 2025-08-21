@@ -16,6 +16,8 @@ updates:
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
+    cooldown:
+      default-days: 3
 
   - package-ecosystem: pip
     directory: /
