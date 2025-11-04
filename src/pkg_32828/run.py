@@ -55,7 +55,7 @@ def check_user_inputs(repo, repo_url, exclude_branch, max_idle_days):
     repo           : github repository object
     repo_url       : github repository url
     exclude_branch: branch excluded from delete
-    max_idle_days  : maximum number of days that the branch has been idle
+    max_idle_days  : maximum number of days that the branch has been idle (without new commits)
                    : e.g. "max_idle_days = 5" means that the branch went idle for over 5 days
 
     Return: boolean
@@ -161,7 +161,7 @@ def delete_branches(repo, dry_run, max_idle_days, list_branches_to_delete, not_e
 
     Parameter(s):
     repo                   : github repository object
-    max_idle_days          : maximum number of days that the branch has been idle
+    max_idle_days          : maximum number of days that the branch has been idle (without new commits)
     list_branches_to_delete: list of branches to delete
     not_exempt_branch_count: number of branches not exempt from delete
 
@@ -211,7 +211,7 @@ def get_set_user_exclude_branches(exclude_branches):
 @click.option("--dry-run", required=False, type=bool, default=True, help="default: true")
 @click.option("--repo-url", required=True, help="e.g. https://github.com/{owner}/{repo}")
 @click.option("--exclude-branches", required=False, help="Branches excluded from deletion")
-@click.option("--max-idle-days", required=True, help="Delete branches older than max. idle days")
+@click.option("--max-idle-days", required=True, help="Max. no. of idle days (without new commits)")
 @click.version_option(version=__version__)
 def main(dry_run, repo_url, exclude_branches, max_idle_days):
     with suppress(AttributeError):
