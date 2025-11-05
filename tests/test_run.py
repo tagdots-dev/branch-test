@@ -110,8 +110,8 @@ class TestGetSetUserExcludeBranches:
         assert isinstance(set_user_exclude_branches, set) is True
 
     def test_set_user_exclude_branches_failure_01(self):
-        exclude_branches = []
-        set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)
+        exclude_branches = []  # wrong data type
+        set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)  # type: ignore reportArgumentType
 
         assert isinstance(set_user_exclude_branches, set) is True
 
@@ -123,7 +123,7 @@ class TestCheckUserInputs:
 
     def test_user_inputs_max_idle_days_null(self):
         repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", {'main'}, '')
+        assert not check_user_inputs(repo, "https://github.com/owner/repo", {'main'}, '')  # type: ignore reportArgumentType
 
     def test_user_inputs_max_idle_days_negative(self):
         repo = Mock()
@@ -131,15 +131,15 @@ class TestCheckUserInputs:
 
     def test_user_inputs_max_idle_days_string(self):
         repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", {'main'}, 'hello')
+        assert not check_user_inputs(repo, "https://github.com/owner/repo", {'main'}, 's')  # type: ignore reportArgumentType
 
     def test_user_inputs_exclude_branch_not_set_null(self):
         repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", '', 20)
+        assert not check_user_inputs(repo, "https://github.com/owner/repo", '', 20)  # type: ignore reportArgumentType
 
     def test_user_inputs_exclude_branch_not_set_main(self):
         repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", 'main', 10)
+        assert not check_user_inputs(repo, "https://github.com/owner/repo", 'main', 10)  # type: ignore reportArgumentType
 
     def test_user_inputs_repo_url_invalid(self):
         repo = Mock()
@@ -270,7 +270,7 @@ class TestDeleteBranches:
         delete_branches(mock_repo, dry_run, max_idle_days, list_branches_to_delete, not_exempt_branch_count)
         captured = capsys.readouterr()
 
-        assert "had no commit in the last" in captured.out
+        assert "branch is idle more than" in captured.out
         assert "normal" in captured.out
 
     def test_delete_without_branches_to_delete(self, mock_repo, capsys):
@@ -285,6 +285,7 @@ class TestDeleteBranches:
 
 class TestMainCommand:
     def test_main_dry_run_true(self, capsys):
+        """if run locally, export GH_TOKEN"""
         runner = CliRunner()
         result = runner.invoke(
             main,
@@ -292,7 +293,7 @@ class TestMainCommand:
                 "--dry-run", "true",
                 "--repo-url", "https://github.com/tagdots-dev/branch-test",
                 "--exclude-branches", "main",
-                "--max-idle-days", 1
+                "--max-idle-days", 1  # type: ignore reportArgumentType
             ]
         )
 
@@ -319,7 +320,7 @@ class TestMainCommand:
                 "--dry-run", "true",
                 "--repo-url", "https://github.com/tagdots-dev/branch-test",
                 "--exclude-branches", "main",
-                "--max-idle-days", 5
+                "--max-idle-days", 5  # type: ignore reportArgumentType
             ]
         )
 
