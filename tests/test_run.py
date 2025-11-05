@@ -293,7 +293,7 @@ class TestMainCommand:
                 "--dry-run", "true",
                 "--repo-url", "https://github.com/tagdots-dev/branch-test",
                 "--exclude-branches", "main",
-                "--max-idle-days", 1  # type: ignore reportArgumentType
+                "--max-idle-days", "1"
             ]
         )
 
@@ -320,7 +320,7 @@ class TestMainCommand:
                 "--dry-run", "true",
                 "--repo-url", "https://github.com/tagdots-dev/branch-test",
                 "--exclude-branches", "main",
-                "--max-idle-days", 5  # type: ignore reportArgumentType
+                "--max-idle-days", "5"
             ]
         )
 
