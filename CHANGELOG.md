@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 1.1.40 (2025-11-04)
+
+### Fix
+
+- refactor codes to improve code quality
+- upgrade 3.14 in staging and production pipeline
+- upgrade to python 3.14
+- update cron-tasks - delete-workflow-runs and delete-branches
+- add delete-branches-action to cron-tasks
+- run header tab on line break
+- redo line break
+
 ## 1.1.2 (2025-08-19)
 
 ### Fix
