@@ -249,5 +249,5 @@ def main(dry_run: bool, repo_url: str, exclude_branches: str, max_idle_days: int
         sys.exit(1)
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == '__main__':
     main()
