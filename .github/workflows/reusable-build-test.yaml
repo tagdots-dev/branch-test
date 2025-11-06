@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.12.12', '3.13.9', 3.14.x]
+        python: ['3.12.12', '3.13.9', '3.14.x']
 
     steps:
 
@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.12.12', '3.13.9', 3.14.x]
+        python: ['3.12.12', '3.13.9', '3.14.x']
 
     steps:
 
