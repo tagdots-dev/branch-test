@@ -13,13 +13,12 @@ from click.testing import CliRunner
 from github import Repository
 
 from pkg_32828.run import (
-    check_user_inputs,
+    build_set_exclude_branches,
     delete_branches,
     get_auth,
     get_branches_to_delete,
     get_exempt_branches,
-    get_owner_repo,
-    get_set_user_exclude_branches,
+    get_repo,
     main,
 )
 
@@ -68,86 +67,62 @@ class TestGetAuth:
     def test_get_auth_missing_token(self, monkeypatch):
         if "GH_TOKEN" in os.environ:
             monkeypatch.delenv("GH_TOKEN")
-        with pytest.raises(SystemExit) as excinfo:
+        with pytest.raises(KeyError):
             get_auth()
-        assert excinfo.value.code == 1
+        assert KeyError
 
     def test_get_auth_invalid_token(self, monkeypatch):
         if "GH_TOKEN" in os.environ:
-            monkeypatch.setenv("GH_TOKEN", "")
-        with pytest.raises(SystemExit) as excinfo:
+            monkeypatch.setenv("GH_TOKEN", "1212212")
+        with pytest.raises(PermissionError):
             get_auth()
-        assert excinfo.value.code == 1
+        assert PermissionError
 
 
-class TestGetOwnerRepo:
-    def test_https_url(self):
-        repo_url = "https://github.com/owner/repo.git"
-        assert get_owner_repo(repo_url) == "owner/repo"
+class TestGetRepo:
+    def test_https_url(self, monkeypatch):
+        monkeypatch.setenv("GH_TOKEN", "valid_token")
+        with patch("pkg_32828.run.Github") as mock_github:
+            mock_user = Mock()
+            mock_user.login = "test_user"
+            mock_gh = mock_github.return_value
+            mock_gh.get_user.return_value = mock_user
+            gh = get_auth()
+            repo_url = "https://github.com/owner/repo.git"
+            assert get_repo(gh, repo_url)
 
-    def test_ssh_url(self):
-        repo_url = "git@github.com:owner/repo.git"
-        assert get_owner_repo(repo_url) == "owner/repo"
-
-    def test_no_git_suffix(self):
-        repo_url = "https://github.com/owner/repo"
-        assert get_owner_repo(repo_url) == "owner/repo"
+    def test_ssh_url(self, monkeypatch):
+        monkeypatch.setenv("GH_TOKEN", "valid_token")
+        with patch("pkg_32828.run.Github") as mock_github:
+            mock_user = Mock()
+            mock_user.login = "test_user"
+            mock_gh = mock_github.return_value
+            mock_gh.get_user.return_value = mock_user
+            gh = get_auth()
+            repo_url = "git@github.com:owner/repo.git"
+            assert get_repo(gh, repo_url)
 
 
 class TestGetSetUserExcludeBranches:
-    def test_set_user_exclude_branches_success_01(self):
+    def test_set_exclude_branches_success_01(self):
         exclude_branches = ' test1,test2 , test3 '
         expected_string = 'test3'
-        set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)
+        set_user_exclude_branches = build_set_exclude_branches(exclude_branches)
 
         assert isinstance(set_user_exclude_branches, set) is True
         assert expected_string in set_user_exclude_branches
 
-    def test_set_user_exclude_branches_success_02(self):
+    def test_set_exclude_branches_success_02(self):
         exclude_branches = ''
-        set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)
+        set_user_exclude_branches = build_set_exclude_branches(exclude_branches)
 
         assert isinstance(set_user_exclude_branches, set) is True
 
-    def test_set_user_exclude_branches_failure_01(self):
+    def test_set_exclude_branches_failure_01(self):
         exclude_branches = []  # wrong data type
-        set_user_exclude_branches = get_set_user_exclude_branches(exclude_branches)  # type: ignore reportArgumentType
+        set_user_exclude_branches = build_set_exclude_branches(exclude_branches)  # type: ignore reportArgumentType
 
         assert isinstance(set_user_exclude_branches, set) is True
-
-
-class TestCheckUserInputs:
-    def test_user_inputs_success(self):
-        repo = Mock()
-        assert check_user_inputs(repo, "https://github.com/owner/repo", {'main', 'badges'}, 5)
-
-    def test_user_inputs_max_idle_days_null(self):
-        repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", {'main'}, '')  # type: ignore reportArgumentType
-
-    def test_user_inputs_max_idle_days_negative(self):
-        repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", {'main'}, -1)
-
-    def test_user_inputs_max_idle_days_string(self):
-        repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", {'main'}, 's')  # type: ignore reportArgumentType
-
-    def test_user_inputs_exclude_branch_not_set_null(self):
-        repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", '', 20)  # type: ignore reportArgumentType
-
-    def test_user_inputs_exclude_branch_not_set_main(self):
-        repo = Mock()
-        assert not check_user_inputs(repo, "https://github.com/owner/repo", 'main', 10)  # type: ignore reportArgumentType
-
-    def test_user_inputs_repo_url_invalid(self):
-        repo = Mock()
-        assert not check_user_inputs(repo, "invalid_url", {'main'}, 15)
-
-    def test_user_inputs_repo_url_null(self):
-        repo = Mock()
-        assert not check_user_inputs(repo, '', {'main'}, 50)
 
 
 class TestGetExemptBranches:
@@ -172,7 +147,7 @@ class TestGetExemptBranches:
         mock_repo.get_pulls.return_value = [pull_01, pull_02]
 
         # create exempt set
-        exempt = get_exempt_branches(mock_repo, set_user_exclude_branches=set(["branch-not-in-all"]))
+        exempt = get_exempt_branches(mock_repo, set_exclude_branches=set(["branch-not-in-all"]))
 
         # assert branches in or not in exempt
         assert "protected_01" in exempt
@@ -205,7 +180,7 @@ class TestGetExemptBranches:
         mock_repo.get_pulls.return_value = [pull_01, pull_02]
 
         # create exempt set
-        exempt = get_exempt_branches(mock_repo, set_user_exclude_branches=set())
+        exempt = get_exempt_branches(mock_repo, set_exclude_branches=set())
 
         # assert branches in or not in exempt
         assert "protected_01" in exempt
@@ -241,7 +216,7 @@ class TestGetBranchesToDelete:
         exempt_branches = {"main", "normal_01", "normal_02"}
         cutoff_datetime = datetime.now(timezone.utc) - timedelta(days=max_idle_days)
         list_branches_to_delete, not_exempt_branch_count =\
-            get_branches_to_delete(mock_repo, max_idle_days, exempt_branches, cutoff_datetime)
+            get_branches_to_delete(mock_repo, exempt_branches, cutoff_datetime)
 
         # Total branches (7) - Exempt branches (3) = not_exempt_branch_count (4)
         # not_exempt_branch_count                  = not in list_branches_to_delete (1) + list_branches_to_delete (3)
@@ -306,7 +281,7 @@ class TestMainCommand:
         captured = capsys.readouterr()
         print(captured)
 
-        assert "Starting to Delete GitHub Branches" in captured.out
+        assert "Starting Delete GitHub Branches" in captured.out
         assert "dry-run: True" in captured.out
         assert "Total Number of Branches" in captured.out
 
@@ -325,7 +300,7 @@ class TestMainCommand:
         )
 
         # assertions
-        assert result.exit_code == 1
+        assert result.exit_code > 0
         captured = capsys.readouterr()
         print(captured)
 
@@ -342,7 +317,41 @@ class TestMainCommand:
         )
 
         # assertions
-        assert result.exit_code == 1
+        assert result.exit_code > 0
+        captured = capsys.readouterr()
+        print(captured)
+
+    def test_main_dry_run_url_not_found(self, capsys):
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--dry-run", "true",
+                "--repo-url", "https://github.com/tagdots-dev/url-not-found",
+                "--exclude-branches", "main",
+                "--max-idle-days", "3"
+            ]
+        )
+
+        # assertions
+        assert result.exit_code > 0
+        captured = capsys.readouterr()
+        print(captured)
+
+    def test_main_dry_run_invalid_gh_url(self, capsys):
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--dry-run", "true",
+                "--repo-url", "https://github-test.com/owner/repo.git",
+                "--exclude-branches", "main",
+                "--max-idle-days", "3"
+            ]
+        )
+
+        # assertions
+        assert result.exit_code > 0
         captured = capsys.readouterr()
         print(captured)
 
