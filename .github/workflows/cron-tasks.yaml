@@ -18,15 +18,58 @@ permissions:
     pull-requests: read
 
 jobs:
-  badge-demo: # https://github.com/tagdots/setup-badge-action
+  badge-coverage: # https://github.com/tagdots/setup-badge-action
     runs-on: ubuntu-latest
 
     permissions:
       contents: write
+      pull-requests: write
+
+    outputs:
+      COV_PER: ${{ steps.get-coverage-results.outputs.COV_PER }}
+      COV_RUN: ${{ steps.get-coverage-results.outputs.COV_RUN }}
 
     steps:
-    - id: badge-demo
+    - id: checkout-source-code
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # 5.0.1
+
+    - id: setup-Python
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - id: install-python-deps
+      run: make test-install
+
+    - id: coverage-run
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PYTHONUNBUFFERED: "1"
+      run: make test
+
+    - id: get-coverage-results
+      run: |
+        # get coverage results
+        echo "COV_RUN=${{ steps.run-coverage.outcome }}"                  >> "$GITHUB_OUTPUT"
+        echo "COV_PER=$(coverage report | grep TOTAL | awk '{print $6}')" >> "$GITHUB_OUTPUT"
+
+    - id: upload-coverage
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      with:
+        name: coverage
+        path: htmlcov/
+        if-no-files-found: error
+        retention-days: 1
+        overwrite: true
+        compression-level: 6
+
+    - id: coverage-badge
       uses: tagdots/setup-badge-action@294661aa1f149b59dfe1cd187539eca7f8f0fabf # 1.0.18
+      with:
+        badge-name: coverage
+        badge-url: https://github.com/tagdots-dev/branch-test/actions/workflows/cron-tasks.yaml
+        label: "Code Coverage"
+        message: "${{ steps.get-coverage-results.outputs.COV_PER }}"
 
   stale-workflow-runs: # https://github.com/tagdots/delete-workflow-runs
     runs-on: ubuntu-latest
@@ -111,7 +154,7 @@ jobs:
 
   notify-slack: # https://github.com/slackapi/slack-github-action
     if: always()
-    needs: [badge-demo, stale-workflow-runs, stale-issues-prs, stale-branches, update-pre-commit]
+    needs: [badge-coverage, stale-workflow-runs, stale-issues-prs, stale-branches, update-pre-commit]
 
     runs-on: ubuntu-latest
 
@@ -124,7 +167,7 @@ jobs:
       shell: bash
       run: |
         # get overall result from all of the previous jobs
-        if "${{ needs.badge-demo.result == 'success' && needs.stale-workflow-runs.result == 'success' && needs.stale-issues-prs.result == 'success' && needs.stale-branches.result == 'success' && needs.update-pre-commit.result == 'success' }}"; then
+        if "${{ needs.badge-coverage.result == 'success' && needs.stale-workflow-runs.result == 'success' && needs.stale-issues-prs.result == 'success' && needs.stale-branches.result == 'success' && needs.update-pre-commit.result == 'success' }}"; then
           echo "WORKFLOW_RESULT=:white_check_mark:" >> "$GITHUB_OUTPUT"
         else
           echo "WORKFLOW_RESULT=:no_entry:" >> "$GITHUB_OUTPUT"
@@ -142,7 +185,7 @@ jobs:
               *Workflow : ${{ github.workflow }} ${{ steps.get-overall-jobs-results.outputs.WORKFLOW_RESULT }}*
               ```
               URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n
-              Job: badge-demo          - ${{ needs.badge-demo.result }}\n
+              Job: badge-coverage      - ${{ needs.badge-coverage.result }}\n
               Job: stale-workflow-runs - ${{ needs.stale-workflow-runs.result }}\n
               Job: stale-issues-prs    - ${{ needs.stale-issues-prs.result }}\n
               Job: stale-branches      - ${{ needs.stale-branches.result }}\n
