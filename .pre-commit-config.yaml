@@ -15,7 +15,7 @@ repos:
     - --config
     - .github/config/hadolint-cfg.yaml
 - repo: https://github.com/adrienverge/yamllint
-  rev: v1.37.1
+  rev: v1.38.0
   hooks:
   - name: Check Yaml to verify syntax and more
     id: yamllint
