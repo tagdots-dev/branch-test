@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [ "setuptools", "wheel" ]
+requires = [ "setuptools" ]
 
 [project]
 name = "pkg-32828"
@@ -20,7 +20,7 @@ classifiers = [
   "Topic :: Software Development :: Build Tools",
 ]
 dependencies = [
-  "click==8.4.1",
+  "click==8.4.2",
   "pygithub==2.9.1",
 ]
 optional-dependencies.local = [
@@ -49,8 +49,8 @@ test = [
 ]
 
 [tool.setuptools]
-dynamic.version = { attr = "src.pkg_32828.__init__" }
 packages.find.where = [ "src" ]
+dynamic.version = { attr = "src.pkg_32828.__init__" }
 
 [tool.pyproject-fmt]
 column_width = 125
@@ -69,11 +69,11 @@ source = [ "." ]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-major_version_zero = false
-tag_format = "$version"
-update_changelog_on_bump = true
+version_scheme = "pep440"
+version_provider = "pep621"
 version_files = [
   "src/pkg_32828/__init__.py:__version__",
 ]
-version_provider = "pep621"
-version_scheme = "pep440"
+major_version_zero = false
+tag_format = "$version"
+update_changelog_on_bump = true
