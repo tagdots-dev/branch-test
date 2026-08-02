@@ -32,7 +32,7 @@ optional-dependencies.test = [
   "coverage",
   "flake8",
   "isort",
-  "pyscan-rs",
+  "pysentry-rs",
   "pytest",
   "twine",
 ]

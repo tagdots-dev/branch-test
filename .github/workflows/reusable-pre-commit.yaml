@@ -34,10 +34,9 @@ jobs:
         # install package
         make local-install
 
-    - shell: bash
-      run: |
-        # Pyscan vulnerabilities on python dependencies
-        [[ ! -f "requirements.txt" && ! -f "pyproject.toml" ]] || pyscan -d .
+    - name: Pysentry to scan for transitive vulnerabilities on required dependencies
+      shell: bash
+      run: pysentry-rs --fail-on high --exclude-extra --no-fail-on-unknown --forbid-quarantined
 
     - shell: bash
       run: |
