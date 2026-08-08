@@ -1,43 +1,57 @@
 ---
+
 # NOTE: Terraform-managed template
 
 # release category: New Features
+
 feature:
-  - head-branch:
-    - '^feat'
+
+- head-branch:
+  - "^feat"
 
 # release category: Change Features
+
 enhancement:
-  - head-branch:
-    - '^perf'
-    - '^refactor'
+
+- head-branch:
+  - "^perf"
+  - "^refactor"
 
 # release category: Fixes
+
 fix:
-  - head-branch:
-    - '^bugfix'
-    - '^hotfix'
-    - '^fix'
+
+- head-branch:
+  - "^bugfix"
+  - "^hotfix"
+  - "^fix"
 
 # release category: Maintenance
+
 dependencies:
-  - head-branch:
-    - '^dep/'
+
+- head-branch:
+  - "^dep/"
 
 # release category: Others
+
 build:
-  - head-branch:
-    - '^build'
-    - '^ci'
+
+- head-branch:
+  - "^build"
+  - "^ci"
 
 documentation:
-  - head-branch:
-    - '^doc'
+
+- head-branch:
+  - "^doc"
 
 style:
-  - head-branch:
-    - '^style'
+
+- head-branch:
+  - "^style"
 
 test:
-  - head-branch:
-    - '^test'
+
+- head-branch:
+  - "^test"
