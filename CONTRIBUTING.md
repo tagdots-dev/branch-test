@@ -1,4 +1,5 @@
 <!-- NOTE: Terraform-managed template -->
+
 # Contributing
 
 Hi there! We're thrilled that you'd like to contribute to this project. Your contribution is encouraging to us all here at **tagdots-dev**.
@@ -8,12 +9,12 @@ Please note that this project is released with a [Contributor Code of Conduct][c
 ## 🔔 Issues and PRs
 
 Your contributions can be:
+
 - report a bug or issue at [issues].
 - make a request for change, feature, or suggestion at [issues].
 - open a pull request.
 - engage in some positive technical discussions at [discussions].
 - provide feedback in email (developers@tagdots.com)
-
 
 ## 💻 Submitting a pull request
 
@@ -30,12 +31,11 @@ We appreciate your time and effort and recommend the following:
 1. Push to your fork and submit a pull request.
 1. Your pull request will be reviewed and merged.
 
-
 ## 📚 Resources
 
 - [How to Fork a Repo](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo)
 
 [code-of-conduct]: CODE_OF_CONDUCT.md
-[discussions]: https://github.com/tagdots-dev/branch-test/discussions
-[issues]: https://github.com/tagdots-dev/branch-test/issues
+[discussions]: https://github.com/tagdots-dev/python-test/discussions
+[issues]: https://github.com/tagdots-dev/python-test/issues
 [fork-a-repository]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo
