@@ -1,5 +1,4 @@
 ---
-
 # NOTE: Terraform-managed template
 
 # https://devtodevops.com/hadolint-dockerfile/
@@ -11,8 +10,7 @@ no-fail: false
 strict-labels: false
 verbose: false
 ignored:
-
-- DL3008 # pin version: apt install
-- DL3013 # pin version: pip install
-- DL3025 # use exec (JSON) form for CMD or ENTRYPOINT arguments
-- SC1091 # shellcheck source
+  - DL3008 # pin version: apt install
+  - DL3013 # pin version: pip install
+  - DL3025 # use exec (JSON) form for CMD or ENTRYPOINT arguments
+  - SC1091 # shellcheck source
