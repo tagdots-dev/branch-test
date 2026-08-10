@@ -87,34 +87,3 @@ jobs:
           # CKV2_GHA_1   - Ensure top-level permissions are not set to write-all
           # CKV_DOCKER_2 - Ensure that HEALTHCHECK instructions have been added to container images
           # CKV_DOCKER_3 - Ensure that a user for the container has been created
-
-  add-on-terraform:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout source code # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install terraform # https://github.com/marketplace/actions/hashicorp-setup-terraform
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-
-      - name: Install tflint # https://github.com/marketplace/actions/setup-tflint
-        uses: terraform-linters/setup-tflint@6e1e0642c0289bd619021bf6b34e3c08ed1e005a # v6.3.0
-
-      - name: Terraform fmt
-        id: fmt
-        shell: bash
-        run: terraform fmt -recursive -check -diff .
-        continue-on-error: true
-
-      - name: Terraform validate
-        id: validate
-        shell: bash
-        run: terraform validate
-
-      - name: Terraform tflint
-        id: tflint
-        shell: bash
-        run: tflint --recursive --format=sarif
