@@ -18,7 +18,7 @@ test:
 	@echo "***************************************************************************"
 	@echo "*** Running coverage tests and collect the coverage data"
 	@echo "***************************************************************************"
-	uv run coverage run -m pytest -v
+	uv run coverage run -m pytest -vs
 
 	@echo "\n"
 	@echo "## Create an HTML report of the coverage of the files"
