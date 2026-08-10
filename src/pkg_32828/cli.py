@@ -3,6 +3,7 @@
 """
 Purpose: Delete GitHub Branches
 """
+
 import os
 import sys
 from contextlib import suppress
@@ -26,15 +27,15 @@ def get_auth() -> Github:
     Creates an instance of Github class to interact with GitHub API
     """
     try:
-        gh_token = os.environ['GH_TOKEN']
+        gh_token = os.environ["GH_TOKEN"]
         gh = Github(auth=Auth.Token(gh_token), per_page=100)
         gh.get_rate_limit()
         return gh
 
     except KeyError:
-        raise KeyError('GH_TOKEN (environment variable) not found')
+        raise KeyError("GH_TOKEN (environment variable) not found")
     except BadCredentialsException:
-        raise PermissionError('Invalid GitHub Token (GH_TOKEN)')
+        raise PermissionError("Invalid GitHub Token (GH_TOKEN)")
 
 
 def get_repo(gh: Github, repo_url: str) -> Repository.Repository:
@@ -45,18 +46,22 @@ def get_repo(gh: Github, repo_url: str) -> Repository.Repository:
     repo_url: repository url (e.g. https://github.com/{user/org}/repo.git)
     """
     try:
-        list_gh_substrings = ['https://github.com', 'git@github.com:']
+        list_gh_substrings = ["https://github.com", "git@github.com:"]
         if not any(gh_substring in repo_url for gh_substring in list_gh_substrings):
-            raise ValueError(f'repo-url ({repo_url}) is invalid')
+            raise ValueError(f"repo-url ({repo_url}) is invalid")
 
-        owner_repo = '/'.join(repo_url.rsplit('/', 2)[-2:]).\
-            replace('.git', '').replace('git@github.com:', '').replace('https://github.com/', '')
+        owner_repo = (
+            "/".join(repo_url.rsplit("/", 2)[-2:])
+            .replace(".git", "")
+            .replace("git@github.com:", "")
+            .replace("https://github.com/", "")
+        )
 
         repo = gh.get_repo(owner_repo)
         return repo
 
     except UnknownObjectException as e:
-        raise ValueError(f'{repo_url} repository not found ({e.status})')
+        raise ValueError(f"{repo_url} repository not found ({e.status})")
 
 
 def get_exempt_branches(repo: Repository.Repository, set_exclude_branches: set) -> set:
@@ -83,18 +88,18 @@ def get_exempt_branches(repo: Repository.Repository, set_exclude_branches: set) 
         for user_exclude_branch in set_exclude_branches:
             if user_exclude_branch not in set_all_branches:
                 set_exempt_branches.remove(user_exclude_branch)
-        print(f'Refined User Exclude Branch(es): {set_exempt_branches}') if len(set_exempt_branches) else ''
+        print(f"Refined User Exclude Branch(es): {set_exempt_branches}") if len(set_exempt_branches) else ""
 
     """add to set_exempt_branch - default branch"""
     default_branch = repo.default_branch
     set_exempt_branches.add(default_branch)
-    print(f'Default Branch           : {default_branch}')
+    print(f"Default Branch           : {default_branch}")
 
     """add protected branch to set_exempt_branch"""
     for branch in all_branches:
         if branch.protected:
             set_exempt_branches.add(branch.name)
-            print(f'Protected Branch         : {branch.name}')
+            print(f"Protected Branch         : {branch.name}")
 
     """add to set_exempt_branch - PR head branch"""
     pulls = repo.get_pulls()
@@ -104,13 +109,14 @@ def get_exempt_branches(repo: Repository.Repository, set_exclude_branches: set) 
 
         head_branch = pull.head.ref
         set_exempt_branches.add(head_branch)
-        print(f'Pull Request Head Branch : {head_branch}')
+        print(f"Pull Request Head Branch : {head_branch}")
 
     return set_exempt_branches
 
 
-def get_branches_to_delete(repo: Repository.Repository, set_exempt_branches: set,
-                           branch_max_idle: datetime) -> Tuple[list, int]:
+def get_branches_to_delete(
+    repo: Repository.Repository, set_exempt_branches: set, branch_max_idle: datetime
+) -> Tuple[list, int]:
     """
     get to-be-deleted branches from not-exempt branches
 
@@ -129,15 +135,20 @@ def get_branches_to_delete(repo: Repository.Repository, set_exempt_branches: set
             if branch_max_idle > branch.commit.commit.committer.date:
                 list_branches_to_delete.append(branch.name)
 
-    print(f'\nTotal Number of Branches                         : {total_branch_count}')
-    print(f'Total Number of Branches (Exempt-From-Delete)    : {len(set_exempt_branches)}')
-    print(f'Total Number of Branches (Not-Exempt-From-Delete): {count_not_exempt_branch}')
+    print(f"\nTotal Number of Branches                         : {total_branch_count}")
+    print(f"Total Number of Branches (Exempt-From-Delete)    : {len(set_exempt_branches)}")
+    print(f"Total Number of Branches (Not-Exempt-From-Delete): {count_not_exempt_branch}")
 
     return list_branches_to_delete, count_not_exempt_branch
 
 
-def delete_branches(repo: Repository.Repository, dry_run: bool, max_idle_days: int, list_branches_to_delete: list,
-                    count_not_exempt_branch: int) -> bool:
+def delete_branches(
+    repo: Repository.Repository,
+    dry_run: bool,
+    max_idle_days: int,
+    list_branches_to_delete: list,
+    count_not_exempt_branch: int,
+) -> bool:
     """
     delete branches
 
@@ -148,8 +159,10 @@ def delete_branches(repo: Repository.Repository, dry_run: bool, max_idle_days: i
     count_not_exempt_branch: number of branches not exempt from delete
     """
     dry_run_msg = "(MOCK) " if dry_run else "✅ "
-    print(f'\nFrom {count_not_exempt_branch} Not-Exempt-From-Delete branch(es), ' +
-          f'{len(list_branches_to_delete)} branch is idle more than {max_idle_days} day(s)')
+    print(
+        f"\nFrom {count_not_exempt_branch} Not-Exempt-From-Delete branch(es), "
+        + f"{len(list_branches_to_delete)} branch is idle more than {max_idle_days} day(s)"
+    )
     print("-" * 90)
     if len(list_branches_to_delete) > 0:
         for branch_to_delete in list_branches_to_delete:
@@ -159,7 +172,7 @@ def delete_branches(repo: Repository.Repository, dry_run: bool, max_idle_days: i
             ref = repo.get_git_ref(f"heads/{branch_to_delete}")
             ref.delete() if not dry_run else ""
 
-            print(f'{dry_run_msg}Delete branch - last update UTC {branch_last_commit_time}: {branch_to_delete}')
+            print(f"{dry_run_msg}Delete branch - last update UTC {branch_last_commit_time}: {branch_to_delete}")
     else:
         print("There is no branch to delete")
 
@@ -178,7 +191,7 @@ def build_set_exclude_branches(exclude_branches: str) -> Set[str]:
     * turn list into set to ensure unqiue branch name
     """
     if isinstance(exclude_branches, str):
-        list_exclude_branches = exclude_branches.split(',')
+        list_exclude_branches = exclude_branches.split(",")
         return set(map(str.strip, list_exclude_branches))
     else:
         return set()
@@ -191,8 +204,10 @@ def build_set_exclude_branches(exclude_branches: str) -> Set[str]:
 @click.option("--max-idle-days", required=True, type=int, help="Max. no. of idle days (without commits)")
 @click.version_option(version=__version__)
 def main(dry_run: bool, repo_url: str, exclude_branches: str, max_idle_days: int):
-    print(f"\n🚀 Starting Delete GitHub Branches (dry-run: {dry_run}, exclude-branches: " +
-          f"{exclude_branches}, max-idle-days: {max_idle_days})\n")
+    print(
+        f"\n🚀 Starting Delete GitHub Branches (dry-run: {dry_run}, exclude-branches: "
+        + f"{exclude_branches}, max-idle-days: {max_idle_days})\n"
+    )
 
     try:
         gh = get_auth()
@@ -210,16 +225,15 @@ def main(dry_run: bool, repo_url: str, exclude_branches: str, max_idle_days: int
         set_exempt_branches = get_exempt_branches(repo, set_exclude_branches)
 
         """get list of to-be-deleted branches and number of not-exempt branch"""
-        list_branches_to_delete, count_not_exempt_branch = \
-            get_branches_to_delete(repo, set_exempt_branches, branch_max_idle)
+        list_branches_to_delete, count_not_exempt_branch = get_branches_to_delete(repo, set_exempt_branches, branch_max_idle)
 
         """delete to-be-deleted branches"""
         delete_branches(repo, dry_run, max_idle_days, list_branches_to_delete, count_not_exempt_branch)
 
     except Exception as e:
-        print(f'Error: {e}\n')
+        print(f"Error: {e}\n")
         sys.exit(1)
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main()

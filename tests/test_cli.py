@@ -12,7 +12,7 @@ import pytest
 from click.testing import CliRunner
 from github import Repository
 
-from pkg_32828.run import (
+from pkg_32828.cli import (
     build_set_exclude_branches,
     delete_branches,
     get_auth,
@@ -39,6 +39,7 @@ def mock_branch():
         commit_date = datetime.now(timezone.utc) - timedelta(days=last_commit_days_ago)
         branch.commit.commit.committer.date = commit_date
         return branch
+
     return _create_branch
 
 
@@ -49,13 +50,14 @@ def mock_pull():
         pull.base.ref = base_ref
         pull.head.ref = head_ref
         return pull
+
     return _create_pull
 
 
 class TestGetAuth:
     def test_get_auth_success(self, monkeypatch):
         monkeypatch.setenv("GH_TOKEN", "valid_token")
-        with patch("pkg_32828.run.Github") as mock_github:
+        with patch("pkg_32828.cli.Github") as mock_github:
             mock_user = Mock()
             mock_user.login = "test_user"
             mock_gh = mock_github.return_value
@@ -82,7 +84,7 @@ class TestGetAuth:
 class TestGetRepo:
     def test_https_url(self, monkeypatch):
         monkeypatch.setenv("GH_TOKEN", "valid_token")
-        with patch("pkg_32828.run.Github") as mock_github:
+        with patch("pkg_32828.cli.Github") as mock_github:
             mock_user = Mock()
             mock_user.login = "test_user"
             mock_gh = mock_github.return_value
@@ -93,7 +95,7 @@ class TestGetRepo:
 
     def test_ssh_url(self, monkeypatch):
         monkeypatch.setenv("GH_TOKEN", "valid_token")
-        with patch("pkg_32828.run.Github") as mock_github:
+        with patch("pkg_32828.cli.Github") as mock_github:
             mock_user = Mock()
             mock_user.login = "test_user"
             mock_gh = mock_github.return_value
@@ -105,15 +107,15 @@ class TestGetRepo:
 
 class TestGetSetUserExcludeBranches:
     def test_set_exclude_branches_success_01(self):
-        exclude_branches = ' test1,test2 , test3 '
-        expected_string = 'test3'
+        exclude_branches = " test1,test2 , test3 "
+        expected_string = "test3"
         set_user_exclude_branches = build_set_exclude_branches(exclude_branches)
 
         assert isinstance(set_user_exclude_branches, set) is True
         assert expected_string in set_user_exclude_branches
 
     def test_set_exclude_branches_success_02(self):
-        exclude_branches = ''
+        exclude_branches = ""
         set_user_exclude_branches = build_set_exclude_branches(exclude_branches)
 
         assert isinstance(set_user_exclude_branches, set) is True
@@ -215,8 +217,9 @@ class TestGetBranchesToDelete:
         max_idle_days = 7
         exempt_branches = {"main", "normal_01", "normal_02"}
         cutoff_datetime = datetime.now(timezone.utc) - timedelta(days=max_idle_days)
-        list_branches_to_delete, not_exempt_branch_count =\
-            get_branches_to_delete(mock_repo, exempt_branches, cutoff_datetime)
+        list_branches_to_delete, not_exempt_branch_count = get_branches_to_delete(
+            mock_repo, exempt_branches, cutoff_datetime
+        )
 
         # Total branches (7) - Exempt branches (3) = not_exempt_branch_count (4)
         # not_exempt_branch_count                  = not in list_branches_to_delete (1) + list_branches_to_delete (3)
@@ -236,11 +239,13 @@ class TestDeleteBranches:
 
         list_branches_to_delete = ["normal_04", "normal_05", "normal_06"]
 
-        mock_repo.get_branch(side_effect=[
-            mock_branch("normal_04", last_commit_days_ago=12),
-            mock_branch("normal_05", last_commit_days_ago=20),
-            mock_branch("normal_06", last_commit_days_ago=10)
-        ])
+        mock_repo.get_branch(
+            side_effect=[
+                mock_branch("normal_04", last_commit_days_ago=12),
+                mock_branch("normal_05", last_commit_days_ago=20),
+                mock_branch("normal_06", last_commit_days_ago=10),
+            ]
+        )
 
         delete_branches(mock_repo, dry_run, max_idle_days, list_branches_to_delete, not_exempt_branch_count)
         captured = capsys.readouterr()
@@ -265,11 +270,15 @@ class TestMainCommand:
         result = runner.invoke(
             main,
             [
-                "--dry-run", "true",
-                "--repo-url", "https://github.com/tagdots-dev/branch-test",
-                "--exclude-branches", "main",
-                "--max-idle-days", "1"
-            ]
+                "--dry-run",
+                "true",
+                "--repo-url",
+                "https://github.com/tagdots-dev/branch-test",
+                "--exclude-branches",
+                "main",
+                "--max-idle-days",
+                "1",
+            ],
         )
 
         # capsys to capture result.stdout and stderr
@@ -292,11 +301,15 @@ class TestMainCommand:
         result = runner.invoke(
             main,
             [
-                "--dry-run", "true",
-                "--repo-url", "https://github.com/tagdots-dev/branch-test",
-                "--exclude-branches", "main",
-                "--max-idle-days", "5"
-            ]
+                "--dry-run",
+                "true",
+                "--repo-url",
+                "https://github.com/tagdots-dev/branch-test",
+                "--exclude-branches",
+                "main",
+                "--max-idle-days",
+                "5",
+            ],
         )
 
         # assertions
@@ -309,11 +322,15 @@ class TestMainCommand:
         result = runner.invoke(
             main,
             [
-                "--dry-run", "true",
-                "--repo-url", "https://github.com/tagdots-dev/branch-test",
-                "--exclude-branches", "main",
-                "--max-idle-days", "hello"
-            ]
+                "--dry-run",
+                "true",
+                "--repo-url",
+                "https://github.com/tagdots-dev/branch-test",
+                "--exclude-branches",
+                "main",
+                "--max-idle-days",
+                "hello",
+            ],
         )
 
         # assertions
@@ -326,11 +343,15 @@ class TestMainCommand:
         result = runner.invoke(
             main,
             [
-                "--dry-run", "true",
-                "--repo-url", "https://github.com/tagdots-dev/url-not-found",
-                "--exclude-branches", "main",
-                "--max-idle-days", "3"
-            ]
+                "--dry-run",
+                "true",
+                "--repo-url",
+                "https://github.com/tagdots-dev/url-not-found",
+                "--exclude-branches",
+                "main",
+                "--max-idle-days",
+                "3",
+            ],
         )
 
         # assertions
@@ -343,11 +364,15 @@ class TestMainCommand:
         result = runner.invoke(
             main,
             [
-                "--dry-run", "true",
-                "--repo-url", "https://github-test.com/owner/repo.git",
-                "--exclude-branches", "main",
-                "--max-idle-days", "3"
-            ]
+                "--dry-run",
+                "true",
+                "--repo-url",
+                "https://github-test.com/owner/repo.git",
+                "--exclude-branches",
+                "main",
+                "--max-idle-days",
+                "3",
+            ],
         )
 
         # assertions
