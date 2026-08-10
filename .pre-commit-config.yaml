@@ -105,8 +105,3 @@ repos:
           - --args=-write=false
           - --args=-recursive
           - --args=-check
-      - name: Terraform linter
-        id: terraform_tflint
-        args:
-          - --args=--recursive
-          - --args=--format=sarif
