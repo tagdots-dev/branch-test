@@ -94,14 +94,3 @@ repos:
   #   hooks:
   #     - name: Python pyright - type checking
   #       id: pyright
-  - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.108.1
-    hooks:
-      - name: Terraform format
-        id: terraform_fmt
-        args:
-          - --args=-no-color
-          - --args=-diff
-          - --args=-write=false
-          - --args=-recursive
-          - --args=-check
