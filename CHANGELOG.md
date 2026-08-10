@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 1.2.0 (2026-08-09)
+
+### Fix
+
+- pyproject-fmt format update
+- update github-url
+- improve code quality
+- update python matrix
+- restore main with no cover
+
+### Refactor
+
+- reformat pyproject after pyproject_fmt update
+
 ## 1.1.40 (2025-11-04)
 
 ### Fix
