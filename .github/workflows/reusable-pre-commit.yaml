@@ -10,6 +10,7 @@ env:
   HADOLINT_VERSION: "v2.15.1"
   PYTHON_VERSION: "3.14.x"
   TERRAFORM_VERSION: "1.15.x"
+  UV_VERSION: "0.12.3"
 
 permissions:
   contents: read
@@ -27,15 +28,12 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      # --------------------------------------------------------------------------- #
       - name: Setup UV # https://github.com/marketplace/actions/astral-sh-setup-uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: "true"
-
-      - name: Install test dependency-group
-        shell: bash
-        run: make test-plus
 
       - name: Install hadolint
         shell: bash
@@ -44,6 +42,10 @@ jobs:
           chmod +x hadolint
           sudo mv hadolint /usr/bin/
           hadolint --version
+
+      - name: Install test dependency-group
+        shell: bash
+        run: make test-plus
 
       - name: Run pre-commit on everything
         shell: bash
@@ -57,6 +59,7 @@ jobs:
       - name: Run Pysentry (dependency vulnerability scanner)
         shell: bash
         run: uv run pysentry-rs --fail-on high --exclude-extra --no-fail-on-unknown --forbid-quarantined
+      # --------------------------------------------------------------------------- #
 
   add-on-checkov:
     runs-on: ubuntu-latest
