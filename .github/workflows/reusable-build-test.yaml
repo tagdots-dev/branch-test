@@ -18,7 +18,7 @@ on: # yamllint disable-line rule:truthy
 env:
   PACKAGE_NAME: pkg_32828
   PYTHON_VERSION: "3.14.x"
-  UV_VERSION: "0.12.0"
+  UV_VERSION: "0.12.3"
 
 permissions:
   contents: read
