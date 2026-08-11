@@ -9,7 +9,7 @@ on:
 
 env:
   PYTHON_VERSION: "3.14.x"
-  UV_VERSION: "0.12.0"
+  UV_VERSION: "0.12.3"
 
 permissions:
   actions: read
@@ -90,7 +90,7 @@ jobs:
           label: "Code Coverage"
           message: "${{ needs.pre-badge-coverage.outputs.COV_PER }}"
 
-  stale-workflow-runs: # https://github.com/tagdots/delete-workflow-runs
+  stale-workflow-runs:
     runs-on: ubuntu-latest
 
     permissions:
