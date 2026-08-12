@@ -38,4 +38,3 @@ updates:
       - dependency-type: "indirect"
     cooldown:
       default-days: 3
-
