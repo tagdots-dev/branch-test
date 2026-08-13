@@ -1,5 +1,5 @@
 ---
-name: CD-production-2
+name: CD-production
 
 on: # yamllint disable-line rule:truthy
   release:
