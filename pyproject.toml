@@ -23,11 +23,11 @@ dependencies = [
   "click~=8.4.2",
   "pygithub~=2.9.1",
 ]
-urls.Changelog = "https://github.com/tagdots-dev/branch-test/blob/main/CHANGELOG.md"
-urls.Documentation = "https://github.com/tagdots-dev/branch-test/blob/main/README.md"
+urls.Changelog = "https://github.com/tagdots-dev/pkg-32828/blob/main/CHANGELOG.md"
+urls.Documentation = "https://github.com/tagdots-dev/pkg-32828/blob/main/README.md"
 urls.Homepage = "https://github.com/tagdots-dev"
-urls.Issues = "https://github.com/tagdots-dev/branch-test/issues"
-urls.Repository = "https://github.com/tagdots-dev/branch-test"
+urls.Issues = "https://github.com/tagdots-dev/pkg-32828/issues"
+urls.Repository = "https://github.com/tagdots-dev/pkg-32828"
 scripts.pkg-32828 = "pkg_32828.cli:main"
 
 [dependency-groups]
