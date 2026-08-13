@@ -1,5 +1,5 @@
 ---
-name: CD-staging
+name: CD-staging-2
 
 on: # yamllint disable-line rule:truthy
   pull_request:
@@ -13,7 +13,7 @@ env:
   PROJECT_NAME: pkg-32828
   PACKAGE_NAME: pkg_32828
   PYTHON_VERSION: "3.14.x"
-  UV_VERSION: "0.12.0"
+  UV_VERSION: "0.12.3"
 
 permissions:
   contents: read
@@ -104,23 +104,10 @@ jobs:
         shell: bash
         run: sleep 15
 
-      - name: Checkout source code # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Setup Python # https://github.com/marketplace/actions/setup-python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Setup UV # https://github.com/marketplace/actions/astral-sh-setup-uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          version: ${{ env.UV_VERSION }}
-          enable-cache: "true"
-
-      - name: Install main project packages
-        shell: bash
-        run: uv sync
 
       - name: Install package from TestPyPI and run app to show version
         shell: bash
@@ -129,7 +116,7 @@ jobs:
           EXTRA_INDEX_URL: "https://pypi.org/simple/"
         run: |
           uv run pip install ${{ env.PROJECT_NAME }} --index-url ${{ env.INDEX_URL }} --extra-index-url ${{ env.EXTRA_INDEX_URL }}
-          ${{ env.PROJECT_NAME }} --version
+          uv run python -c "from ${{ env.PACKAGE_NAME }} import __version__; print(__version__)"
 
   notify-slack:
     if: always()
@@ -137,8 +124,8 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      WORKFLOW_RESULT: ${{ steps.get-previous-jobs-results.outputs.WORKFLOW_RESULT }}
-      TAG_NAME: ${{ steps.get-previous-jobs-results.outputs.TAG_NAME }}
+      WORKFLOW_RESULT: ${{ steps.get-overall-jobs-results.outputs.WORKFLOW_RESULT }}
+      TAG_NAME: ${{ steps.get-overall-jobs-results.outputs.TAG_NAME }}
 
     steps:
       - name: Get overall jobs results
@@ -146,9 +133,15 @@ jobs:
         shell: bash
         run: |
           # get overall result from all of the previous jobs
-          if "${{ needs.push-git-tag.result == 'success' && needs.publish-TestPyPI.result == 'success' && needs.validate-TestPyPI.result == 'success' }}"; then
+          if ${{
+            needs.push-git-tag.result == 'success'
+            && needs.publish-TestPyPI.result == 'success'
+            && needs.validate-TestPyPI.result == 'success' }}; then
             echo "WORKFLOW_RESULT=:white_check_mark:" >> "$GITHUB_OUTPUT"
-          elif "${{ needs.push-git-tag.result == 'skipped' && needs.publish-TestPyPI.result == 'skipped' && needs.validate-TestPyPI.result == 'skipped' }}"; then
+          elif ${{
+            needs.push-git-tag.result == 'skipped'
+            && needs.publish-TestPyPI.result == 'skipped'
+            && needs.validate-TestPyPI.result == 'skipped' }}; then
             echo "WORKFLOW_RESULT=:fast_forward:" >> "$GITHUB_OUTPUT"
           else
             echo "WORKFLOW_RESULT=:no_entry:" >> "$GITHUB_OUTPUT"
