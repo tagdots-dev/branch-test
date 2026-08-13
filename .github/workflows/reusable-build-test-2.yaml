@@ -16,7 +16,7 @@ on: # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 env:
-  PACKAGE_NAME: ${package_name}
+  PACKAGE_NAME: pkg_32828
   PYTHON_VERSION: "3.14.x"
   TERRAFORM_VERSION: "1.15.x"
   UV_VERSION: "0.12.3"
