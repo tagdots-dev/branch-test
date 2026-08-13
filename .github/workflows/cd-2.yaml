@@ -117,7 +117,7 @@ jobs:
         run: |
           uv run pip install ${{ env.PROJECT_NAME }} --index-url ${{ env.INDEX_URL }} --extra-index-url ${{ env.EXTRA_INDEX_URL }}
           uv run python -c "from ${{ env.PACKAGE_NAME }} import __version__; print(__version__)"
-  
+
   notify-slack:
     if: always()
     needs: [push-git-tag, publish-TestPyPI, validate-TestPyPI]
