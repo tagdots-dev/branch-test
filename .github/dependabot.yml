@@ -61,7 +61,9 @@ updates:
 
   - package-ecosystem: terraform
     directories:
-      - "**/*"
+      - /
+      - /modules
+      - /workspace
     schedule:
       interval: "cron"
       cronjob: "15 1 * * 0"
