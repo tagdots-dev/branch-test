@@ -1,4 +1,5 @@
 version: 2
+
 updates:
   - package-ecosystem: github-actions
     directory: /
@@ -7,74 +8,52 @@ updates:
       cronjob: "15 0 * * 0"
     open-pull-requests-limit: 1
     rebase-strategy: "disabled"
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
-    commit-message:
-      prefix: "[GITHUB-ACTIONS] "
     groups:
       github-actions:
         patterns:
           - "*"
-    cooldown:
-      default-days: 3
-
-  - package-ecosystem: pip
-    directory: /
-    schedule:
-      interval: "cron"
-      cronjob: "15 1 * * 0"
-    open-pull-requests-limit: 1
-    rebase-strategy: "disabled"
-    versioning-strategy: increase
+    commit-message:
+      prefix: "[GITHUB-ACTIONS] "
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
-    commit-message:
-      prefix: "[PIP] "
-    groups:
-      uv-all:
-        patterns:
-          - "*"
     cooldown:
       default-days: 3
-
   - package-ecosystem: uv
     directory: /
     schedule:
       interval: "cron"
-      cronjob: "15 1 * * 0"
+      cronjob: "15 0 * * 0"
     open-pull-requests-limit: 1
     rebase-strategy: "disabled"
     versioning-strategy: increase
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
+    groups:
+      pip:
+        patterns:
+          - "*"
     commit-message:
       prefix: "[UV] "
-    groups:
-      uv-all:
-        patterns:
-          - "*"
-    cooldown:
-      default-days: 3
-
-  - package-ecosystem: terraform
-    directories:
-      - /
-      - /modules
-      - /workspace
-    schedule:
-      interval: "cron"
-      cronjob: "15 1 * * 0"
-    open-pull-requests-limit: 1
-    rebase-strategy: "disabled"
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
-    commit-message:
-      prefix: "[TERRAFORM] "
+    cooldown:
+      default-days: 3
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: "cron"
+      cronjob: "15 0 * * 0"
+    open-pull-requests-limit: 1
+    rebase-strategy: "disabled"
+    versioning-strategy: increase
     groups:
-      terraform:
+      uv:
         patterns:
           - "*"
+    commit-message:
+      prefix: "[PIP] "
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    cooldown:
+      default-days: 3
