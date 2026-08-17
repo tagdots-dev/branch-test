@@ -92,3 +92,15 @@ major_version_zero = false
 tag_format = "$version"
 update_changelog_on_bump = true
 pre_bump_hooks = [ "uv lock" ]
+customize.change_type_map = { feat = "New Features", perf = "Change Features", refactor = "Change Features", fix = "Fixes", bugfix = "Fixes", hotfix = "Fixes", dep = "Maintenance", build = "Others", ci = "Others", docs = "Others", style = "Others", test = "Others" }  # map commit types to Changelog entry
+customize.change_type_order = [
+  "BREAKING CHANGE",
+  "New Features",
+  "Change Features",
+  "Fixes",
+  "Maintenance",
+  "Builds",
+  "Others",
+  "Tests",
+]  # commit types ordering
+customize.changelog_pattern = "^(BREAKING[\\-\\ ]CHANGE|feat|perf|refactor|fix|bugfix|hotfix|dep|build|ci|docs|style|test)"  # commit types to include in the Changelog
