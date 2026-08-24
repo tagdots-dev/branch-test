@@ -108,12 +108,12 @@ nohup.out
 
 
 # -------------------- AI ---------------------- #
-.claude/
-.clinerules/
-.cursor/
+.claude
 .clineignore
+.clinerules
 .continueignore
 .continuerc.json
+.cursor
 
 # -------------------- Python --------------------- #
 .coveragerc
@@ -340,10 +340,10 @@ __marimo__/
 
 # --------------- Miscellaneous ------------------- #
 .secrets
-.vscode/
+.vscode
+*.key
+*.pem
 *.tmp
-**/credentials.json
-**/*.key
-**/*.pem
-**/id_rsa
-**/secrets.json
+*credentials.json
+*id_rsa
+*secrets.json
