@@ -49,6 +49,9 @@ version.path = "src/pkg_32828/__init__.py"
 metadata.directory = "src"
 build.targets.wheel.packages = [ "src/pkg_32828" ]
 
+[tool.uv]
+default-groups = [ "dev", "test" ]
+
 [tool.black]
 line-length = 125
 
@@ -75,9 +78,9 @@ venv = ".venv"
 venvPath = "."
 
 [tool.coverage]
-run.branch = true
-run.omit = [ "tests/*" ]
 run.source = [ "src/pkg_32828" ]
+run.omit = [ "tests/*" ]
+run.branch = true
 report.fail_under = 80
 report.show_missing = false
 
