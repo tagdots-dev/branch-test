@@ -2,12 +2,12 @@
 name: re-pre-commit
 
 on: # yamllint disable-line rule:truthy
-  workflow_call:
+  workflow_call: {}
 
   workflow_dispatch:
 
 env:
-  HADOLINT_VERSION: "v2.15.1"
+  HADOLINT_VERSION: "v2.15.x"
   PYTHON_VERSION: "3.14.x"
   TERRAFORM_VERSION: "1.15.x"
 
