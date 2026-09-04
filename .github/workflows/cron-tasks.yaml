@@ -149,7 +149,7 @@ jobs:
         with:
           repo-url: ${{ github.server_url }}/${{ github.repository }}
           max-idle-days: 10
-          exclude-branches: "badges"
+          exclude-branches: "badges,dev"
           dry-run: false
 
   update-pre-commit:
