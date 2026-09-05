@@ -1,7 +1,14 @@
-#!/usr/bin/env python
+"""Delete GitHub branches that have been idle beyond a configurable threshold.
 
-"""
-Purpose: Delete GitHub Branches
+This CLI tool deletes GitHub branches from a repository based on a
+maximum age in days (max-days). It has an option to exclude one or
+more branches (exclude-branches).
+
+Usage:
+    pkg-32828 --repo-url <url> --max-idle-days N [--exclude-branches "comma-separated branches"] [--dry-run]
+
+Environment:
+    GH_TOKEN - required GitHub personal access token with content write scope.
 """
 
 import os
@@ -23,8 +30,17 @@ from pkg_32828 import __version__
 
 
 def get_auth() -> Github:
-    """
-    Creates an instance of Github class to interact with GitHub API
+    """Create and validate a GitHub API client.
+
+    This function reads the ``GH_TOKEN`` environment variable, creates a
+    ``Github`` client, and verifies the token by calling ``Github.get_rate_limit``.
+
+    Returns:
+        A configured ``Github`` client instance.
+
+    Raises:
+        KeyError: If the ``GH_TOKEN`` environment variable is not set.
+        PermissionError: If the GitHub token is invalid or has expired.
     """
     try:
         gh_token = os.environ["GH_TOKEN"]
@@ -33,17 +49,27 @@ def get_auth() -> Github:
         return gh
 
     except KeyError:
-        raise KeyError("GH_TOKEN (environment variable) not found")
+        raise KeyError("GitHub Token - not found")
     except BadCredentialsException:
-        raise PermissionError("Invalid GitHub Token (GH_TOKEN)")
+        raise PermissionError("GitHub Token - bad credential")
 
 
 def get_repo(gh: Github, repo_url: str) -> Repository.Repository:
-    """
-    Get owner/repo for pyGitHub to interact with GitHub API
+    """Parse a GitHub repository URL and fetch the corresponding Repository object.
 
-    Parameter(s):
-    repo_url: repository url (e.g. https://github.com/{user/org}/repo.git)
+    This function validates the URL format, extracts the ``owner/repo`` pair,
+    and calls the GitHub API to retrieve the full repository object.
+
+    Parameters:
+        gh: A configured ``Github`` client instance.
+        repo_url: A GitHub repository URL (e.g. ``https://github.com/{user/org}/repo.git``
+            or ``git@github.com:{user/org}/repo.git``).
+
+    Returns:
+        A PyGithub ``Repository`` object for the specified repository.
+
+    Raises:
+        ValueError: If the URL is invalid or the repository cannot be found on GitHub.
     """
     try:
         list_gh_substrings = ["https://github.com", "git@github.com:"]
@@ -65,43 +91,48 @@ def get_repo(gh: Github, repo_url: str) -> Repository.Repository:
 
 
 def get_exempt_branches(repo: Repository.Repository, set_exclude_branches: set) -> set:
-    """
-    Add default, protected, and PR base branches to build a set of exempt branches
-    Remove user specified branches from exempt branches if the specified branches do not exist
+    """Build a set of branches exempt from deletion.
 
-    Parameter(s):
-    repo                     : github repository object
-    set_exclude_branches: set of branch(es) excluded from delete via user inputs
+    Parameters:
+        repo: A PyGithub ``Repository`` object.
+        set_exclude_branches: Set of branch names excluded from deletion by user input.
+
+    Returns:
+        A set of branch names that should not be deleted.
+
+    Notes:
+        * Exemptions include the default branch, protected branches, PR head/base
+          branches, and user-specified branches.
     """
 
-    """use copy() here to prevent 'Exception Error: Set changed size during iteration'"""
+    # Use copy() to prevent RuntimeError: Set changed size during iteration
     set_exempt_branches = set_exclude_branches.copy()
     all_branches = repo.get_branches()
     set_all_branches = set()
 
-    """iterate all branches"""
+    # iterate all branches
     for branch in all_branches:
         set_all_branches.add(branch.name)
 
-    """remove branch from set_exempt_branches if the branch is not found in existing branches"""
+    # remove branch from set_exempt_branches if the branch is not found
     if len(set_exclude_branches) > 0:
         for user_exclude_branch in set_exclude_branches:
             if user_exclude_branch not in set_all_branches:
                 set_exempt_branches.remove(user_exclude_branch)
-        print(f"Refined User Exclude Branch(es): {set_exempt_branches}") if len(set_exempt_branches) else ""
+        print(f"Refined Exclude Branch(es): {set_exempt_branches}") if len(set_exempt_branches) else ""
 
-    """add to set_exempt_branch - default branch"""
+    # add to set_exempt_branch - default branch
     default_branch = repo.default_branch
     set_exempt_branches.add(default_branch)
-    print(f"Default Branch           : {default_branch}")
+    print(f"Default Branch: {default_branch}")
 
-    """add protected branch to set_exempt_branch"""
+    # add protected branch to set_exempt_branch
     for branch in all_branches:
         if branch.protected:
             set_exempt_branches.add(branch.name)
-            print(f"Protected Branch         : {branch.name}")
+            print(f"Protected Branch: {branch.name}")
 
-    """add to set_exempt_branch - PR head branch"""
+    # add to set_exempt_branch - PR head branch
     pulls = repo.get_pulls()
     for pull in pulls:
         base_branch = pull.base.ref
@@ -109,7 +140,7 @@ def get_exempt_branches(repo: Repository.Repository, set_exclude_branches: set) 
 
         head_branch = pull.head.ref
         set_exempt_branches.add(head_branch)
-        print(f"Pull Request Head Branch : {head_branch}")
+        print(f"Pull Request Head Branch: {head_branch}")
 
     return set_exempt_branches
 
@@ -117,13 +148,21 @@ def get_exempt_branches(repo: Repository.Repository, set_exclude_branches: set) 
 def get_branches_to_delete(
     repo: Repository.Repository, set_exempt_branches: set, branch_max_idle: datetime
 ) -> Tuple[list, int]:
-    """
-    get to-be-deleted branches from not-exempt branches
+    """Identify branches eligible for deletion from the set of non-exempt branches.
 
-    Parameter(s):
-    repo               : github repository object
-    set_exempt_branches: set of exempt branches excluded from delete
-    branch_max_idle    : datetime on maximum number of days that the branch has been idle
+    A branch is eligible if its last commit date precedes ``branch_max_idle``
+    and the branch is not in the exempt set.
+
+    Parameters:
+        repo: A PyGithub ``Repository`` object.
+        set_exempt_branches: Set of branch names exempt from deletion.
+        branch_max_idle: Cutoff datetime; branches whose last commit precedes
+            this time are candidates for deletion.
+
+    Returns:
+        A tuple containing:
+            - A list of branch names eligible for deletion.
+            - The count of non-exempt branches.
     """
     list_branches_to_delete = []
     total_branch_count = 0
@@ -149,14 +188,21 @@ def delete_branches(
     list_branches_to_delete: list,
     count_not_exempt_branch: int,
 ) -> bool:
-    """
-    delete branches
+    """Delete branches that are idle beyond the maximum threshold.
 
-    Parameter(s):
-    repo                   : github repository object
-    max_idle_days          : maximum number of days that the branch has been idle (without new commits)
-    list_branches_to_delete: list of branches to delete
-    count_not_exempt_branch: number of branches not exempt from delete
+    If ``dry_run`` is ``True``, deletions are simulated (logged as "MOCK")
+    and no actual branches are removed.
+
+    Parameters:
+        repo: A PyGithub ``Repository`` object.
+        dry_run: If ``True``, simulate deletions without removing branches.
+        max_idle_days: Maximum number of idle days before a branch is considered
+            for deletion.
+        list_branches_to_delete: List of branch names to delete.
+        count_not_exempt_branch: Number of non-exempt branches.
+
+    Returns:
+        ``True`` on completion.
     """
     dry_run_msg = "(MOCK) " if dry_run else "✅ "
     print(
@@ -180,15 +226,24 @@ def delete_branches(
 
 
 def build_set_exclude_branches(exclude_branches: str) -> Set[str]:
-    """
-    turn exclude_branches into a set
+    """Convert a comma-separated branch string into a set of branch names.
 
-    Parameter(s)
-    exclude_branches: exclude branches from delete (string)
+    Each branch name is stripped of surrounding whitespace, and duplicates
+    are removed by converting the result to a set.
 
-    * use list method .split to split exclude_branches (str).  This convert str to list
-    * use map to strip space before and after each element on the list
-    * turn list into set to ensure unqiue branch name
+    Parameters:
+        exclude_branches: A comma-separated string of branch names to exclude
+            from deletion (e.g. ``"main,develop,feature-x"``).
+
+    Returns:
+        A set of unique branch names, or an empty set if the input is not a string.
+
+    Notes:
+        * Uses the string method ``.split()`` to convert the comma-separated
+          string into a list.
+        * Uses ``map()`` with ``str.strip`` to remove leading and trailing
+          whitespace from each element.
+        * Converts the list to a set to ensure unique branch names.
     """
     if isinstance(exclude_branches, str):
         list_exclude_branches = exclude_branches.split(",")
@@ -204,30 +259,37 @@ def build_set_exclude_branches(exclude_branches: str) -> Set[str]:
 @click.option("--max-idle-days", required=True, type=int, help="Max. no. of idle days (without commits)")
 @click.version_option(version=__version__)
 def main(dry_run: bool, repo_url: str, exclude_branches: str, max_idle_days: int):
+    """Main entry point for the branch deletion CLI.
+
+    Authenticates with GitHub, determines which branches are eligible for
+    deletion based on their idle period, and removes them (or simulates
+    removal in dry-run mode).
+    """
     print(
         f"\n🚀 Starting Delete GitHub Branches (dry-run: {dry_run}, exclude-branches: "
         + f"{exclude_branches}, max-idle-days: {max_idle_days})\n"
     )
 
     try:
+        # validate and process inputs
         gh = get_auth()
         repo = get_repo(gh, repo_url)
         set_exclude_branches = build_set_exclude_branches(exclude_branches)
         with suppress(ValueError):
             max_idle_days = int(max_idle_days)
 
-        """set time"""
+        # compute idle cutoff datetime
         current_datetime_tzutc = datetime.now(timezone.utc)
         branch_max_idle = current_datetime_tzutc - timedelta(days=max_idle_days)
         print(f'Current Time (UTC): {current_datetime_tzutc.strftime("%Y-%m-%d %H:%M:%S")}\n')
 
-        """build exempt branches"""
+        # build exempt branches
         set_exempt_branches = get_exempt_branches(repo, set_exclude_branches)
 
-        """get list of to-be-deleted branches and number of not-exempt branch"""
+        # get list of to-be-deleted branches and number of not-exempt branch
         list_branches_to_delete, count_not_exempt_branch = get_branches_to_delete(repo, set_exempt_branches, branch_max_idle)
 
-        """delete to-be-deleted branches"""
+        # delete to-be-deleted branches
         delete_branches(repo, dry_run, max_idle_days, list_branches_to_delete, count_not_exempt_branch)
 
     except Exception as e:
