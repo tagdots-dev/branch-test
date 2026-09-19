@@ -655,8 +655,8 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "click", specifier = ">=8.4.2,<8.6.0" },
-    { name = "pygithub", specifier = ">=2.9.1,<2.11.0" },
+    { name = "click", specifier = ">=8.4.2" },
+    { name = "pygithub", specifier = ">=2.9.1" },
 ]
 
 [package.metadata.requires-dev]
